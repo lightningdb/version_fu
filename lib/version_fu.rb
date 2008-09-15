@@ -8,7 +8,7 @@ module VersionFu
       return if self.included_modules.include? VersionFu::InstanceMethods
       __send__ :include, VersionFu::InstanceMethods
 
-      cattr_accessor :versioned_class_name, :versioned_foreign_key, :versioned_table_name, 
+      cattr_accessor :versioned_class_name, :versioned_foreign_key, :versioned_table_name,
                      :version_column, :versioned_columns, :exclude_columns
 
       self.versioned_class_name         = options[:class_name]  || 'Version'
@@ -24,12 +24,12 @@ module VersionFu
                             :dependent   => :destroy do
           def latest
             find :first, :order=>'version desc'
-          end                    
+          end
         end
 
         before_save :check_for_new_version
       end
-      
+
       # Versioned Model
       const_set(versioned_class_name, Class.new(ActiveRecord::Base)).class_eval do
         # find first version before the given version
@@ -57,19 +57,19 @@ module VersionFu
       versioned_class.cattr_accessor :original_class
       versioned_class.original_class = self
       versioned_class.set_table_name versioned_table_name
-      
+
       # Version parent association
-      versioned_class.belongs_to self.to_s.demodulize.underscore.to_sym, 
-        :class_name  => "::#{self.to_s}", 
+      versioned_class.belongs_to self.to_s.demodulize.underscore.to_sym,
+        :class_name  => "::#{self.to_s}",
         :foreign_key => versioned_foreign_key
-      
+
       # Finally setup which columns to version
       self.versioned_columns =  versioned_class.new.attributes.keys - [versioned_class.primary_key, versioned_foreign_key, version_column, 'created_at', 'updated_at']
 
       # Block extension
       versioned_class.class_eval &block if block_given?
     end
-    
+
     def versioned_class
       const_get versioned_class_name
     end
@@ -80,18 +80,18 @@ module VersionFu
     def find_version(number)
       versions.find :first, :conditions=>{:version=>number}
     end
-    
+
     def check_for_new_version
       instatiate_revision if create_new_version?
       true # Never halt save
     end
-    
+
     # This the method to override if you want to have more control over when to version
     def create_new_version?
       # Any versioned column changed?
       self.class.versioned_columns.detect {|a| __send__ "#{a}_changed?"}
     end
-    
+
     def instatiate_revision
       new_version = versions.build
       versioned_columns.each do |attribute|
