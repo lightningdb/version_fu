@@ -9,7 +9,7 @@ module VersionFu
       __send__ :include, VersionFu::InstanceMethods
 
       cattr_accessor :versioned_class_name, :versioned_foreign_key, :versioned_table_name, 
-                     :version_column, :versioned_columns
+                     :version_column, :versioned_columns, :exclude_columns
 
       self.versioned_class_name         = options[:class_name]  || 'Version'
       self.versioned_foreign_key        = options[:foreign_key] || self.to_s.foreign_key
@@ -63,12 +63,11 @@ module VersionFu
         :class_name  => "::#{self.to_s}", 
         :foreign_key => versioned_foreign_key
       
+      # Finally setup which columns to version
+      self.versioned_columns =  versioned_class.new.attributes.keys - [versioned_class.primary_key, versioned_foreign_key, version_column, 'created_at', 'updated_at']
+
       # Block extension
       versioned_class.class_eval &block if block_given?
-      
-      # Finally setup which columns to version
-      self.versioned_columns =  versioned_class.new.attributes.keys - 
-        [versioned_class.primary_key, versioned_foreign_key, version_column, 'created_at', 'updated_at']
     end
     
     def versioned_class
@@ -101,6 +100,7 @@ module VersionFu
       version_number = new_record? ? 1 : version + 1
       new_version.version = version_number
       self.version = version_number
+      yield new_version if block_given?
     end
   end
 end
